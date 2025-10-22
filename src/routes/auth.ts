@@ -6,11 +6,13 @@ import { users, roles } from '../db/schema';
 import { hashPassword, comparePassword } from '../utils/password';
 import { eq } from 'drizzle-orm';
 import { rateLimitMiddleware } from '../middlewares/ratelimit';
+import { authMiddleware, requirePermission } from '../middlewares/auth';
 import { generateToken } from '../utils/jwt';
+import { every } from 'hono/combine';
 
 const auth = new Hono();
 
-auth.use('/login', rateLimitMiddleware);
+auth.use('/login', every(rateLimitMiddleware, authMiddleware, requirePermission('canPostLogin')));
 
 auth.post('/register', zValidator('json', registerSchema), async (c) => {
   const { name, email, password } = c.req.valid('json');

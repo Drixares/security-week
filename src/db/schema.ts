@@ -1,5 +1,5 @@
-import { pgTable, uuid, varchar, timestamp, boolean } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { pgTable, uuid, varchar, timestamp, boolean } from 'drizzle-orm/pg-core';
 
 
 export const users = pgTable('users', {

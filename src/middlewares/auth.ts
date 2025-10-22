@@ -1,8 +1,9 @@
 import { Context, Next } from 'hono';
 import { verifyToken } from '../utils/jwt';
 import { db } from '../db';
-import { users } from '../db/schema';
+import { Role, users } from '../db/schema';
 import { eq } from 'drizzle-orm';
+import '../types';
 
 export const authMiddleware = async (c: Context, next: Next) => {
   try {
@@ -62,5 +63,21 @@ export const authMiddleware = async (c: Context, next: Next) => {
     console.error('Auth middleware error:', error);
     return c.json({ error: 'Unauthorized - Authentication failed' }, 401);
   }
+};
+
+export const requirePermission = (permission: keyof Role) => {
+  return async (c: Context, next: Next) => {
+    const user = c.get('user');
+
+    if (!user) {
+      return c.json({ error: 'User not found in context' }, 401);
+    }
+
+    if (!user.role || !user.role[permission]) {
+      return c.json({ error: 'Forbidden - Insufficient permissions' }, 403);
+    }
+
+    await next();
+  };
 };
 
