@@ -1,12 +1,12 @@
-import { relations } from "drizzle-orm";
 import {
 	pgTable,
-	uuid,
 	varchar,
 	timestamp,
-	boolean,
 	text,
+	boolean,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+
 import { ulid } from "ulid";
 
 export const roles = pgTable("roles", {
@@ -24,10 +24,10 @@ export const users = pgTable("users", {
 	id: text("id")
 		.primaryKey()
 		.$defaultFn(() => ulid()),
-	name: varchar("name", { length: 255 }).notNull(),
+	name: varchar("name", { length: 255 }).notNull().unique(),
 	email: varchar("email", { length: 255 }).notNull().unique(),
 	password: varchar("password", { length: 255 }).notNull(),
-	roleId: uuid("role_id").references(() => roles.id),
+	roleId: text("role_id").references(() => roles.id),
 	passwordChangedAt: timestamp("password_changed_at"),
 	lastLoginAttempt: timestamp("last_login_attempt"),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
