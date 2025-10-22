@@ -10,8 +10,15 @@ import { eq } from "drizzle-orm";
 export const usersRouter = base.router({
 	getMyUser: protectedProcedure
 		.route({ method: "GET", path: "/users/me" })
-		.handler(() => {
-			return { test: "test" };
+		.handler(({ context }) => {
+			const { user } = context;
+			return {
+				id: user.id,
+				name: user.name,
+				email: user.email,
+				createdAt: user.createdAt,
+				updatedAt: user.updatedAt,
+			};
 		}),
 
 	getUsers: base
