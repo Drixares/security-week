@@ -1,17 +1,13 @@
 import { Context, Next } from 'hono';
 
-// In-memory store to track last login attempt per email
 const loginAttempts = new Map<string, number>();
-
-// Rate limit configuration
-const RATE_LIMIT_WINDOW = 5000; // 5 seconds in milliseconds
+const RATE_LIMIT_WINDOW = 5000;
 
 /**
  * Rate limiting middleware for login attempts
  * Prevents the same email from attempting login more than once every 5 seconds
  */
 export const rateLimitMiddleware = async (c: Context, next: Next) => {
-  // Get email from request body
   const body = await c.req.json();
   const email = body?.email;
 
@@ -34,7 +30,6 @@ export const rateLimitMiddleware = async (c: Context, next: Next) => {
     );
   }
 
-  // Update timestamp for this email
   loginAttempts.set(email, now);
 
   // Cleanup old entries (optional: prevent memory leaks)
@@ -46,7 +41,6 @@ export const rateLimitMiddleware = async (c: Context, next: Next) => {
     }
   }
 
-  // Continue to next middleware/handler
   await next();
 };
 

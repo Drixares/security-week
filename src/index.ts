@@ -4,15 +4,20 @@ import { cors } from 'hono/cors';
 import { env } from '../env';
 import health from './routes/health';
 import auth from './routes/auth';
+import usersRouter from './routes/users';
+import { every } from 'hono/combine';
 
-// Create Hono app instance
 const app = new Hono();
 
-app.use('*', logger());
-app.use('*', cors());
+app.use('*', every(
+  cors(),
+  logger(),
+));
 
 app.route('/health', health);
 app.route('/auth', auth);
+app.route('/api', usersRouter);
+
 
 app.onError((err, c) => {
   console.error(`Error: ${err.message}`, err);

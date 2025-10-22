@@ -1,12 +1,16 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { registerSchema } from '../validators/schemas';
+import { registerSchema, loginSchema } from '../validators/schemas';
 import { db } from '../db';
 import { users, roles } from '../db/schema';
-import { hashPassword } from '../utils/password';
+import { hashPassword, comparePassword } from '../utils/password';
 import { eq } from 'drizzle-orm';
+import { rateLimitMiddleware } from '../middlewares/ratelimit';
+import { generateToken } from '../utils/jwt';
 
 const auth = new Hono();
+
+auth.use('/login', rateLimitMiddleware);
 
 auth.post('/register', zValidator('json', registerSchema), async (c) => {
   const { name, email, password } = c.req.valid('json');
@@ -30,19 +34,51 @@ auth.post('/register', zValidator('json', registerSchema), async (c) => {
     email,
     password: hashedPassword,
     roleId: userRole?.id || null
-  }).returning({
-    id: users.id,
-    name: users.name,
-    email: users.email,
-    roleId: users.roleId,
-    createdAt: users.createdAt,
-    updatedAt: users.updatedAt
+  }).returning();
+
+  const token = await generateToken({
+    userId: newUser.id,
+    roleId: newUser.roleId,
+    passwordChangedAt: newUser.passwordChangedAt?.toISOString()
   });
 
   return c.json({
     message: 'User registered successfully',
-    user: newUser
+    token
   }, 201);
+});
+
+auth.post('/login', zValidator('json', loginSchema), async (c) => {
+  const { email, password } = c.req.valid('json');
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, email)
+  });
+
+  if (!user) {
+    return c.json({ error: 'Invalid credentials' }, 401);
+  }
+
+  const isPasswordValid = await comparePassword(password, user.password);
+
+  await db.update(users)
+    .set({ lastLoginAttempt: new Date() })
+    .where(eq(users.id, user.id));
+
+  if (!isPasswordValid) {
+    return c.json({ error: 'Invalid credentials' }, 401);
+  }
+
+  const token = await generateToken({
+    userId: user.id,
+    roleId: user.roleId,
+    passwordChangedAt: user.passwordChangedAt?.toISOString()
+  });
+
+  return c.json({
+    message: 'Login successful',
+    token
+  }, 200);
 });
 
 export default auth;
