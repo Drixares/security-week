@@ -9,18 +9,22 @@
   },
   "dependencies": {
     "@hono/zod-validator": "^0.7.4",
+    "@orpc/client": "^1.10.0",
+    "@orpc/openapi": "^1.10.0",
+    "@orpc/server": "^1.10.0",
     "@t3-oss/env-core": "^0.13.8",
     "@types/bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
+    "drizzle-kit": "^0.31.5",
     "drizzle-orm": "^0.44.6",
     "hono": "^4.10.2",
     "pg": "^8.16.3",
+    "ulid": "^3.0.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/pg": "^8.15.5",
-    "drizzle-kit": "^0.30.5",
     "tsx": "^4.20.6"
   }
 }

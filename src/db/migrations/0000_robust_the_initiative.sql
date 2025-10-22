@@ -1,5 +1,5 @@
 CREATE TABLE "roles" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
 	"name" varchar(50) NOT NULL,
 	"can_post_login" boolean DEFAULT true NOT NULL,
 	"can_get_my_user" boolean DEFAULT true NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE "roles" (
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"email" varchar(255) NOT NULL,
 	"password" varchar(255) NOT NULL,

@@ -1,38 +1,28 @@
-import { Hono } from 'hono';
-import { logger } from 'hono/logger';
-import { cors } from 'hono/cors';
-import { secureHeaders } from 'hono/secure-headers';
-import { env } from '../env';
-import health from './routes/health';
-import auth from './routes/auth';
-import usersRouter from './routes/users';
-import { every } from 'hono/combine';
+import { Hono } from "hono";
+import { appRouter } from "./routers";
+import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { onError } from "@orpc/server";
+import { CORSPlugin } from "@orpc/server/plugins";
+import { db } from "./db";
 
 const app = new Hono();
 
-app.use('*', every(
-  secureHeaders(),
-  cors(),
-  logger(),
-));
-
-app.route('/health', health);
-app.route('/auth', auth);
-app.route('/api', usersRouter);
-
-
-app.onError((err, c) => {
-  console.error(`Error: ${err.message}`, err);
-  return c.json(
-    {
-      error: err.message || 'Internal Server Error',
-    },
-    500
-  );
+const handler = new OpenAPIHandler(appRouter, {
+	plugins: [new CORSPlugin()],
+	interceptors: [onError((error) => console.error(error))],
 });
 
+app.use("*", async (c, next) => {
+	const { matched, response } = await handler.handle(c.req.raw, {
+		prefix: "/",
+		context: { headers: c.req.raw.headers, db, honoContext: c },
+	});
 
-export default {
-  port: env.PORT,
-  fetch: app.fetch,
-};
+	if (matched) {
+		return c.newResponse(response.body, response);
+	}
+
+	await next();
+});
+
+export default app;
