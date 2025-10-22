@@ -90,7 +90,7 @@ export const usersRouter = base.router({
 				.update(users)
 				.set({
 					password: hashedNewPassword,
-					passwordChangedAt: new Date(),
+					passwordChangedAt: new Date(Math.floor(Date.now() / 1000) * 1000), // Current time in seconds
 					updatedAt: new Date(),
 				})
 				.where(eq(users.id, user.id));

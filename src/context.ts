@@ -1,11 +1,10 @@
 import { os } from "@orpc/server";
 import z from "zod";
 import type { Database } from "./db";
-import type { Role } from "./db/schema";
 import type { Context } from "hono";
 
 interface Meta {
-	roles?: Pick<Role, "name">[];
+	roles?: string[];
 }
 
 export const base = os

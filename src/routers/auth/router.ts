@@ -1,4 +1,4 @@
-import { ORPCError, os } from "@orpc/server";
+import { ORPCError } from "@orpc/server";
 import * as z from "zod";
 import { loginSchema, registerSchema } from "../../validators/schemas";
 import { db } from "../../db";
@@ -9,7 +9,7 @@ import { generateToken } from "../../utils/jwt";
 import { base } from "../../context";
 
 export const authRouter = base.router({
-	login: os
+	login: base
 		.route({ method: "POST", path: "/auth/login" })
 		.input(loginSchema)
 		.output(z.object({ message: z.string(), token: z.string() }))
@@ -38,13 +38,13 @@ export const authRouter = base.router({
 			const token = await generateToken({
 				userId: user.id,
 				roleId: user.roleId,
-				passwordChangedAt: user.passwordChangedAt?.toISOString(),
+				iat: Math.floor(Date.now() / 1000), // Current time in seconds
 			});
 
 			return { message: "Login successful", token };
 		}),
 
-	register: os
+	register: base
 		.route({ method: "POST", path: "/auth/register" })
 		.input(registerSchema)
 		.output(z.object({ message: z.string(), token: z.string() }))
@@ -78,7 +78,7 @@ export const authRouter = base.router({
 			const token = await generateToken({
 				userId: newUser.id,
 				roleId: newUser.roleId,
-				passwordChangedAt: newUser.passwordChangedAt?.toISOString(),
+				iat: Math.floor(Date.now() / 1000), // Current time in seconds
 			});
 
 			return { message: "User registered successfully", token };
