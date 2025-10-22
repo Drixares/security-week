@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
+import { secureHeaders } from 'hono/secure-headers';
 import { env } from '../env';
 import health from './routes/health';
 import auth from './routes/auth';
@@ -10,6 +11,7 @@ import { every } from 'hono/combine';
 const app = new Hono();
 
 app.use('*', every(
+  secureHeaders(),
   cors(),
   logger(),
 ));
