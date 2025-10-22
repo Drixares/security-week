@@ -1,0 +1,20 @@
+volumes:
+    postgres_data:
+        driver: local
+
+services:
+    postgres:
+        # you can connect with e.g.
+        # psql -h localhost -p 5555 -U postgres -d db
+        image: postgres
+        restart: always
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        ports:
+            - "5555:5432"
+        environment:
+            POSTGRES_DB: db
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            
+
