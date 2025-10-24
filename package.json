@@ -17,7 +17,7 @@
 		"@t3-oss/env-core": "^0.13.8",
 		"@types/bcrypt": "^6.0.0",
 		"dotenv": "^17.2.3",
-		"drizzle-kit": "^0.31.5",
+		"drizzle-kit": "^0.30.5",
 		"drizzle-orm": "^0.44.6",
 		"hono": "^4.10.2",
 		"pg": "^8.16.3",

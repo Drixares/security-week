@@ -48,12 +48,26 @@ export const products = pgTable("products", {
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const apiKeys = pgTable("api_keys", {
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => ulid()),
+	name: varchar("name", { length: 255 }).unique().notNull(),
+	key: varchar("key", { length: 255 }).notNull().unique(),
+	userId: text("user_id")
+		.references(() => users.id, { onDelete: "cascade" })
+		.notNull(),
+	lastUsedAt: timestamp("last_used_at"),
+	createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const usersRelations = relations(users, ({ one, many }) => ({
 	role: one(roles, {
 		fields: [users.roleId],
 		references: [roles.id],
 	}),
 	products: many(products),
+	apiKeys: many(apiKeys),
 }));
 
 export const productsRelations = relations(products, ({ one }) => ({
@@ -67,6 +81,14 @@ export const rolesRelations = relations(roles, ({ many }) => ({
 	users: many(users),
 }));
 
+export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
+	user: one(users, {
+		fields: [apiKeys.userId],
+		references: [users.id],
+	}),
+}));
+
 export type User = typeof users.$inferSelect;
 export type Role = typeof roles.$inferSelect;
 export type Product = typeof products.$inferSelect;
+export type ApiKey = typeof apiKeys.$inferSelect;

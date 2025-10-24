@@ -70,3 +70,16 @@ export const getMyProductsSchema = z.object({
 	page: z.number().optional(),
 	limit: z.number().optional(),
 });
+
+export const createApiKeySchema = z.object({
+	name: z
+		.string()
+		.min(1, "API key name is required")
+		.trim()
+		.min(2, "API key name must be at least 2 characters")
+		.max(255, "API key name must not exceed 255 characters"),
+});
+
+export const deleteApiKeySchema = z.object({
+	id: z.string().min(1, "API key ID is required"),
+});

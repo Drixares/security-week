@@ -1,50 +1,125 @@
 import { verifyToken } from "../utils/jwt";
 import { db } from "../db";
-import { users } from "../db/schema";
+import { users, apiKeys, User, Role } from "../db/schema";
 import { eq } from "drizzle-orm";
 import "../types";
-import type { JWTPayload } from "hono/utils/jwt/types";
 import { base } from "../context";
-import { ORPCError } from "@orpc/server";
+import { hashApiKey } from "../utils/apikey";
+import { tryCatch } from "../utils/try-catch";
+import { checkPasswordChanged } from "../utils/password";
+
+type FoundUser = Partial<User> & {
+	id: string;
+	role: Role | null;
+};
 
 export const authMiddleware = base.middleware(async (opts) => {
 	const { procedure, context, next, errors } = opts;
 
 	const authHeader = context.headers.get("Authorization");
+	const apiKeyHeader = context.headers.get("x-api-key");
 
-	if (!authHeader || !authHeader.startsWith("Bearer ")) {
+	if (!authHeader && !apiKeyHeader) {
 		throw errors.UNAUTHORIZED({
-			message: "Unauthorized - No token provided",
+			message: "Unauthorized - No authentication provided",
 		});
 	}
 
-	const token = authHeader.split(" ")[1];
+	let foundUser: FoundUser | undefined;
 
-	if (!token) {
-		throw errors.UNAUTHORIZED({
-			message: "Unauthorized - Invalid token format",
+	if (apiKeyHeader) {
+		const hashedKey = hashApiKey(apiKeyHeader);
+
+		const apiKeyRecord = await db.query.apiKeys.findFirst({
+			where: eq(apiKeys.key, hashedKey),
+		});
+
+		if (!apiKeyRecord) {
+			throw errors.UNAUTHORIZED({
+				message: "Unauthorized - Invalid API key",
+			});
+		}
+
+		await db
+			.update(apiKeys)
+			.set({ lastUsedAt: new Date() })
+			.where(eq(apiKeys.id, apiKeyRecord.id));
+
+		foundUser = await getFoundUser({ userId: apiKeyRecord.userId });
+
+		if (!foundUser) {
+			throw errors.UNAUTHORIZED({
+				message: "Unauthorized - User not found",
+			});
+		}
+	} else if (authHeader) {
+		if (!authHeader.startsWith("Bearer ")) {
+			throw errors.UNAUTHORIZED({
+				message: "Unauthorized - Invalid token format",
+			});
+		}
+
+		const token = authHeader.split(" ")[1];
+
+		if (!token) {
+			throw errors.UNAUTHORIZED({
+				message: "Unauthorized - Invalid token format",
+			});
+		}
+
+		const [error, decoded] = await tryCatch(verifyToken(token));
+
+		if (error) {
+			console.error("Error verifying token:", error);
+			throw errors.UNAUTHORIZED({
+				message: "Unauthorized - Invalid or expired token",
+			});
+		}
+
+		const { userId, iat } = decoded;
+
+		foundUser = await getFoundUser({ userId: userId as string });
+
+		if (!foundUser) {
+			throw errors.UNAUTHORIZED({
+				message: "Unauthorized - User not found",
+			});
+		}
+
+		checkPasswordChanged({
+			foundUser,
+			iat,
+			onError: () => {
+				throw errors.UNAUTHORIZED({
+					message:
+						"Unauthorized - Token invalid due to password change. Please login again.",
+				});
+			},
 		});
 	}
 
-	let decoded: JWTPayload;
-	try {
-		decoded = await verifyToken(token);
-	} catch {
-		throw errors.UNAUTHORIZED({
-			message: "Unauthorized - Invalid or expired token",
-		});
+	if (!procedure["~orpc"].meta.roles) {
+		return next({ context: { ...context, user: foundUser as FoundUser } });
 	}
 
-	const { userId, iat } = decoded;
+	const requiredRoles = procedure["~orpc"].meta.roles;
 
-	if (!userId) {
-		throw errors.UNAUTHORIZED({
-			message: "Unauthorized - Invalid token payload",
-		});
+	if (requiredRoles && requiredRoles.length > 0) {
+		const userRole = foundUser?.role?.name;
+		if (!userRole) {
+			throw errors.UNAUTHORIZED();
+		}
+		if (!requiredRoles.includes(userRole)) {
+			throw errors.FORBIDDEN();
+		}
 	}
 
-	const user = await db.query.users.findFirst({
-		where: eq(users.id, userId as string),
+	return next({ context: { ...context, user: foundUser as FoundUser } });
+});
+
+async function getFoundUser({ userId }: { userId: string }) {
+	const foundUser = await db.query.users.findFirst({
+		where: eq(users.id, userId),
 		columns: {
 			id: true,
 			name: true,
@@ -58,42 +133,5 @@ export const authMiddleware = base.middleware(async (opts) => {
 			role: true,
 		},
 	});
-
-	if (!user) {
-		throw new ORPCError("UNAUTHORIZED", {
-			message: "Unauthorized - User not found",
-		});
-	}
-
-	// Check if user.passwordChangedAt is newer than token.iat
-	if (user.passwordChangedAt && iat) {
-		const passwordChangedAtTimestamp = user.passwordChangedAt.getTime();
-
-		// If password was changed after token was issued, token is invalid
-		// Convert iat from seconds to milliseconds for comparison
-		if (passwordChangedAtTimestamp > iat * 1000) {
-			throw new ORPCError("UNAUTHORIZED", {
-				message:
-					"Unauthorized - Token invalid due to password change. Please login again.",
-			});
-		}
-	}
-
-	if (!procedure["~orpc"].meta.roles) {
-		return next({ context: { ...context, user } });
-	}
-
-	const requiredRoles = procedure["~orpc"].meta.roles;
-
-	if (requiredRoles && requiredRoles.length > 0) {
-		const userRole = user.role?.name;
-		if (!userRole) {
-			throw errors.UNAUTHORIZED();
-		}
-		if (!requiredRoles.includes(userRole)) {
-			throw errors.FORBIDDEN();
-		}
-	}
-
-	return next({ context: { ...context, user } });
-});
+	return foundUser;
+}
