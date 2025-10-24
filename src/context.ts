@@ -12,6 +12,7 @@ export const base = os
 		headers: Headers;
 		db: Database;
 		honoContext: Context;
+		rawBody?: string;
 	}>()
 	.errors({
 		RATE_LIMIT_EXCEEDED: {

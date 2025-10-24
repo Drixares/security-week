@@ -13,9 +13,28 @@ const handler = new OpenAPIHandler(appRouter, {
 });
 
 app.use("*", async (c, next) => {
-	const { matched, response } = await handler.handle(c.req.raw, {
+	// Buffer the raw body for webhook routes (needed for signature verification)
+	let rawBody: string | undefined;
+	let newRequest: Request | undefined;
+
+	if (c.req.path.startsWith("/webhooks/")) {
+		rawBody = await c.req.text();
+
+		newRequest = new Request(c.req.raw, {
+			body: rawBody,
+			headers: c.req.raw.headers,
+			method: c.req.raw.method,
+		});
+	}
+
+	const { matched, response } = await handler.handle(newRequest ?? c.req.raw, {
 		prefix: "/",
-		context: { headers: c.req.raw.headers, db, honoContext: c },
+		context: {
+			headers: c.req.raw.headers,
+			db,
+			honoContext: c,
+			rawBody,
+		},
 	});
 
 	if (matched) {

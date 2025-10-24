@@ -23,8 +23,9 @@ PORT=3000
 NODE_ENV=development
 
 # Shopify API
-SHOPIFY_SHOP_URL=https://your-shop.myshopify.com
+SHOPIFY_SHOP_NAME=your-shop-name
 SHOPIFY_ACCESS_TOKEN=your-shopify-access-token
+SHOPIFY_WEBHOOK_SECRET=your-shopify-webhook-secret
 ```
 
 ### Database Setup
@@ -137,6 +138,38 @@ Alternatively, if you encounter this issue, the database is likely already in sy
     }
   ]
   ```
+
+#### Webhooks API
+
+**POST /webhooks/shopify-sales**
+- Webhook endpoint for Shopify order creation events
+- Automatically increments `salesCount` for products when orders are placed
+- Secured with HMAC SHA-256 signature verification
+- Handles multiple products and quantities in a single order
+- No authentication required (secured by HMAC signature)
+- Expected headers:
+  - `X-Shopify-Hmac-SHA256`: HMAC signature from Shopify
+- Request body: Shopify order webhook payload (JSON)
+- Response:
+  ```json
+  {
+    "success": true,
+    "message": "Webhook processed successfully. Updated 2 product(s).",
+    "processedProducts": 2
+  }
+  ```
+
+For detailed webhook setup instructions, see [WEBHOOK_SETUP.md](./WEBHOOK_SETUP.md).
+
+### Testing Webhook Signature
+
+To generate a test HMAC signature for webhook testing:
+
+```sh
+bun test:webhook
+```
+
+This will output an example payload and the corresponding HMAC signature you can use with cURL.
 
 ### Permissions
 

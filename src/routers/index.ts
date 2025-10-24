@@ -3,6 +3,7 @@ import { healthRouter } from "./health/router";
 import { usersRouter } from "./users/router";
 import { productsRouter } from "./products/router";
 import { apiKeysRouter } from "./apikeys/router";
+import { webhooksRouter } from "./webhooks/router";
 import { base } from "../context";
 
 export const appRouter = base.router({
@@ -11,4 +12,5 @@ export const appRouter = base.router({
 	users: usersRouter,
 	products: productsRouter,
 	apiKeys: apiKeysRouter,
+	webhooks: webhooksRouter,
 });

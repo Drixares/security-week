@@ -14,6 +14,7 @@ export const env = createEnv({
 
 		SHOPIFY_SHOP_NAME: z.string(),
 		SHOPIFY_ACCESS_TOKEN: z.string(),
+		SHOPIFY_WEBHOOK_SECRET: z.string(),
 	},
 	runtimeEnv: process.env,
 });
