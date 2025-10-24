@@ -1,6 +1,10 @@
 import type { Context, Next } from "hono";
 
-type Permission = "canPostLogin" | "canGetMyUser" | "canGetUsers";
+type Permission =
+	| "canPostLogin"
+	| "canGetMyUser"
+	| "canGetUsers"
+	| "canPostProducts";
 
 export const requirePermission = (permission: Permission) => {
 	return async (c: Context, next: Next) => {

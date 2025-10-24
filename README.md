@@ -6,6 +6,27 @@
 bun install
 ```
 
+### Environment Setup
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/security_week
+
+# JWT
+JWT_SECRET=your-secret-key-here
+JWT_EXPIRY=24h
+
+# Server
+PORT=3000
+NODE_ENV=development
+
+# Shopify API
+SHOPIFY_SHOP_URL=https://your-shop.myshopify.com
+SHOPIFY_ACCESS_TOKEN=your-shopify-access-token
+```
+
 ### Database Setup
 
 1. Start the PostgreSQL database:
@@ -58,3 +79,68 @@ bun db:migrate
 ```
 
 Alternatively, if you encounter this issue, the database is likely already in sync with your schema and no action is needed.
+
+### API Endpoints
+
+#### Products API
+
+**POST /products**
+- Creates a product in Shopify and saves it to the database
+- Requires authentication and `canPostProducts` permission (ADMIN role only)
+- Request body:
+  ```json
+  {
+    "name": "Product Name",
+    "price": 29.99
+  }
+  ```
+- Response:
+  ```json
+  {
+    "id": "01HQXYZ123",
+    "shopifyId": "7891234567890",
+    "message": "Product created successfully"
+  }
+  ```
+
+**GET /products**
+- Returns all products with creator information
+- Requires authentication
+- Response:
+  ```json
+  [
+    {
+      "id": "01HQXYZ123",
+      "shopifyId": "7891234567890",
+      "salesCount": 0,
+      "createdAt": "2024-10-24T10:00:00.000Z",
+      "creator": {
+        "id": "01HQUSER123",
+        "name": "John Doe",
+        "email": "john@example.com"
+      }
+    }
+  ]
+  ```
+
+**GET /my-products**
+- Returns products created by the authenticated user
+- Requires authentication
+- Response:
+  ```json
+  [
+    {
+      "id": "01HQXYZ123",
+      "shopifyId": "7891234567890",
+      "salesCount": 0,
+      "createdAt": "2024-10-24T10:00:00.000Z"
+    }
+  ]
+  ```
+
+### Permissions
+
+The application uses role-based permissions:
+- `ADMIN` - Full access including creating products (`canPostProducts: true`)
+- `USER` - Read-only access to products (`canPostProducts: false`)
+- `BAN` - No access to any resources
