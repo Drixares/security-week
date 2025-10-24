@@ -59,6 +59,7 @@ export const createProductSchema = z.object({
 		.trim()
 		.max(255, "Product name must not exceed 255 characters"),
 	price: z.number().positive("Price must be a positive number"),
+	image: z.url("Image must be a valid URL").optional(),
 });
 
 export const getProductsSchema = z.object({

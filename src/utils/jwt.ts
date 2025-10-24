@@ -1,5 +1,5 @@
 import { sign, verify } from "hono/jwt";
-import { JWTPayload } from "hono/utils/jwt/types";
+import type { JWTPayload } from "hono/utils/jwt/types";
 import { env } from "../../env";
 
 export const generateToken = (payload: JWTPayload) => {

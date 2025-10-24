@@ -4,7 +4,9 @@ type Permission =
 	| "canPostLogin"
 	| "canGetMyUser"
 	| "canGetUsers"
-	| "canPostProducts";
+	| "canPostProducts"
+	| "canPostProductsWithImage"
+	| "canGetBestsellers";
 
 export const requirePermission = (permission: Permission) => {
 	return async (c: Context, next: Next) => {
